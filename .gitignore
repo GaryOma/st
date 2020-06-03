@@ -1,0 +1,3 @@
+/st
+*.o
+/config.def.h
