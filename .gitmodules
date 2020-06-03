@@ -1,0 +1,3 @@
+[submodule "patches/st-history-vim"]
+	path = patches/st-history-vim
+	url = git@github.com:juliusHuelsmann/st-history-vim.git
