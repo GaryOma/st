@@ -1,19 +1,19 @@
-From 3084f7e9442dcee61e71a49273391fbc26a354c0 Mon Sep 17 00:00:00 2001
+From 3867e11b663086dff67c04bb37929614be6704a1 Mon Sep 17 00:00:00 2001
 From: Gary SUBLET <gary.sublet@hotmail.fr>
-Date: Wed, 3 Jun 2020 17:27:12 +0200
+Date: Thu, 18 Jun 2020 08:27:13 +0200
 Subject: [PATCH] meta-patch: vim-browse
 
 ---
  Makefile     |   2 +-
  config.def.h |  14 +++
- normalMode.c | 284 +++++++++++++++++++++++++++++++++++++++++
+ normalMode.c | 279 +++++++++++++++++++++++++++++++++++++++++
  normalMode.h |   7 ++
  st.c         | 348 +++++++++++++++++++++++++++------------------------
  st.h         |   1 +
  utils.h      |  23 ++++
  win.h        |   1 +
  x.c          |  16 ++-
- 9 files changed, 526 insertions(+), 170 deletions(-)
+ 9 files changed, 521 insertions(+), 170 deletions(-)
  create mode 100644 normalMode.c
  create mode 100644 normalMode.h
  create mode 100644 utils.h
@@ -65,10 +65,10 @@ index 0895a1f..daa092b 100644
  /*
 diff --git a/normalMode.c b/normalMode.c
 new file mode 100644
-index 0000000..b580218
+index 0000000..24a3fb2
 --- /dev/null
 +++ b/normalMode.c
-@@ -0,0 +1,284 @@
+@@ -0,0 +1,279 @@
 +#include <X11/keysym.h>
 +#include <X11/XKBlib.h>
 +
@@ -210,7 +210,7 @@ index 0000000..b580218
 +			int n = 1<<(contains(cchar(),wDelS,s) ?(2-low) :!contains(cchar(),wDelL,l)),
 +			    found = (on|=n)^n && ((off ?on^n :n)!=1); //< state change &letter state
 +			if (found && off) historyMove(-sgn, 0, 0);       //< offset move if required
-+			if (found || it>mit) it=on=0, --state.m.c;           //< terminate iteration
++			if (found || it>mit) it=-1, on=0, --state.m.c;       //< terminate iteration
 +		}
 +	} else return failed;
 +	state.m.c = 0;
@@ -264,16 +264,11 @@ index 0000000..b580218
 +		state.m.active = 1;
 +	} else if (cs[0]==infix_i || cs[0]==infix_a) { state.cmd.infix=cs[0];
 +	} else if (cs[0] == 'y') {
-+		result = state.cmd.op ? exitMotion: succ;
-+		if (result == exitMotion) {
-+			if (state.cmd.op == yank) { //< Complete yank
-+				selstart(0, term.c.y, 0);
-+				selextend(term.col-1, term.c.y, SEL_REGULAR, 0);
-+			} else state.cmd.op = yank;
-+		} else {
-+			state.cmd.op = yank;
-+			selstart(term.c.x, term.c.y, 0);
-+		}
++		if (state.cmd.op) {
++			result = (state.cmd.op == yank) ? exitOp : exitMotion;
++			if (state.cmd.op == yank) selstart(0, term.c.y, 0);
++		} else selstart(term.c.x, term.c.y, 0);
++		state.cmd.op = yank;
 +	} else if (cs[0] == visual || cs[0] == visualLine) {
 +		if (state.cmd.op != (unsigned char) cs[0]) {
 +			state.cmd = defaultNormalMode.cmd;
@@ -288,7 +283,7 @@ index 0000000..b580218
 +	} // Operation/Motion finished if valid: update cmd string, extend selection, update search
 +	if (result != failed) {
 +		if (len == 1 && !ctrl) decodeTo(cs, len, &cCmd);
-+		if (state.cmd.op == visualLine) {
++		if ((state.cmd.op == visualLine) || ((state.cmd.op == yank) && (result == exitOp))) {
 +			int const off = pos(term.c.y, 1) < pos(sel.ob.y, 0);
 +			sel.ob.x = off ? term.col - 1 : 0;
 +			selextend(off ? 0 : term.col-1, term.c.y, sel.type, 0);
@@ -1057,5 +1052,5 @@ index e5f1737..6f675e9 100644
  	for (bp = shortcuts; bp < shortcuts + LEN(shortcuts); bp++) {
  		if (ksym == bp->keysym && match(bp->mod, e->state)) {
 -- 
-2.26.2
+2.27.0
 
