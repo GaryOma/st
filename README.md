@@ -23,4 +23,6 @@ Reads the `.Xdefaults` file to get the _colors_ + _font_ (current theme : Gruvbo
 
 ![vim](img/st_vim.png)
 
+![vim history](img/st_vim_history.png)
+
 ![pipes.sh](img/st_pipes.png)
